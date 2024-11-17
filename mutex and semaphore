@@ -1,0 +1,63 @@
+import java.util.concurrent.Semaphore;
+class ReaderWriterProblem {
+    private static final int NUM_READERS = 5; // Number of readers
+    private static final int NUM_WRITERS = 3; // Number of writers
+    private static Semaphore mutex = new Semaphore(1); // To control access to the shared variable 'readCount'
+    private static Semaphore writeLock = new Semaphore(1); // To control access for writers (exclusive access)
+    private static int readCount = 0; // Count of active readers
+    public static void main(String[] args) {
+        // Start readers and writers in separate threads
+        for (int i = 0; i < NUM_READERS; i++) {
+            new Thread(new Reader(), "Reader-" + i).start();
+        }
+        for (int i = 0; i < NUM_WRITERS; i++) {
+            new Thread(new Writer(), "Writer-" + i).start();
+        }
+    }
+    // Reader class
+    static class Reader implements Runnable {
+        public void run() {
+            try {
+                while (true) {
+                    // Reader enters the critical section
+                    mutex.acquire(); // Enter critical section to modify readCount
+                    readCount++;
+                    if (readCount == 1) {
+                        writeLock.acquire(); // First reader locks the writer
+                    }
+                    mutex.release(); // Exit critical section
+                    // Reading from shared resource (simulated)
+                    System.out.println(Thread.currentThread().getName() + " is reading.");
+                    // Reader exits the critical section
+                    mutex.acquire();
+                    readCount--;
+                    if (readCount == 0) {
+                        writeLock.release(); // Last reader releases the writer
+                    }
+                    mutex.release();
+                    Thread.sleep(1000); // Simulate reading delay
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+    // Writer class
+    static class Writer implements Runnable {
+        public void run() {
+            try {
+                while (true) {
+                    // Writer enters the critical section (exclusive access)
+                    writeLock.acquire(); // Only one writer can access at a time
+                    // Writing to shared resource (simulated)
+                    System.out.println(Thread.currentThread().getName() + " is writing.");
+                    writeLock.release(); // Writer releases the lock
+                    Thread.sleep(1500); // Simulate writing delay
+                }
+            } 
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+}
