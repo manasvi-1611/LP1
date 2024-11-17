@@ -1,0 +1,79 @@
+/*input_pass2_macro.asm
+START 100
+INCR
+MOV A, D
+DECR
+END
+1.javac Pass2Macro.java
+2.java Pass2Macro inout_pass2_macro.asm
+*/
+import java.io.*;
+import java.util.*;
+
+public class Pass2Macro{
+    static Map<String, Integer> mnt = new LinkedHashMap<>();  // Macro Name Table (MNT)
+    static List<String> mdt = new ArrayList<>();              // Macro Definition Table (MDT)
+
+    public static void main(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Usage: java Pass2MacroProcessor <input_file>");
+            return;
+        }
+
+        String inputFile = args[0];
+        String outputFile = "expanded_code.asm";
+
+        // Populate MNT and MDT from Pass 1 output (for this demo, we're using hardcoded values)
+        populateMNTandMDT();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+             BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile))) {
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] tokens = line.trim().split("\\s+");
+                if (tokens.length > 0 && mnt.containsKey(tokens[0])) {
+                    // If the line contains a macro call, expand it using MDT
+                    expandMacro(tokens[0], writer);
+                } else {
+                    // Write non-macro lines as-is
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+
+            System.out.println("Expanded code written to: " + outputFile);
+
+        } catch (IOException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    // Expand a macro by writing its definition from MDT
+    private static void expandMacro(String macroName, BufferedWriter writer) throws IOException {
+        int start = mnt.get(macroName);
+        int end = start;
+        while (!mdt.get(end).equals("MEND")) {
+            writer.write(mdt.get(end));
+            writer.newLine();
+            end++;
+        }
+        writer.write(mdt.get(end)); // Write MEND
+        writer.newLine();
+    }
+
+    // Dummy MNT and MDT population (replace this with actual data from Pass 1)
+    private static void populateMNTandMDT() {
+        // Macro Name Table: <macro name, MDT index>
+        mnt.put("INCR", 0);
+        mnt.put("DECR", 3);
+
+        // Macro Definition Table: Macro lines ending with MEND
+        mdt.add("ADD A, B");  // INCR definition start
+        mdt.add("MOV B, C");
+        mdt.add("MEND");
+        mdt.add("SUB A, B");  // DECR definition start
+        mdt.add("MOV B, C");
+        mdt.add("MEND");
+    }
+}
