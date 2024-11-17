@@ -1,0 +1,54 @@
+package DLL;
+
+public class MathLib {
+    public static double add(double a, double b) {
+        return a + b;
+    }
+    
+    public static double subtract(double a, double b) {
+        return a - b;
+    }
+    
+    public static double multiply(double a, double b) {
+        return a * b;
+    }
+    
+    public static double divide(double a, double b) {
+        if (b == 0) {
+            throw new ArithmeticException("Cannot divide by zero");
+        }
+        return a / b;
+    }
+    
+    public static double power(double base, double exponent) {
+        return Math.pow(base, exponent);
+    }
+    
+    public static long factorial(int n) {
+        if (n < 0) {
+            throw new IllegalArgumentException("Factorial not defined for negative numbers");
+        }
+        return n <= 1 ? 1 : n * factorial(n - 1);
+    }
+}
+
+//this is in python
+
+import jpype
+import jpype.imports
+from jpype import *
+
+def test_java_math_lib():
+    if not isJVMStarted():
+        jpype.startJVM(classpath=['./'])
+    else:
+        print("JVM already started")
+    MathLib = JClass('MathLib')
+    print(MathLib.add(2, 3))
+    print(MathLib.subtract(5, 2))
+    print(MathLib.multiply(4, 6))
+    print(MathLib.divide(10, 2))
+    print(MathLib.power(2, 3))
+    print(MathLib.factorial(5))
+    jpype.shutdownJVM()
+test_java_math_lib()
