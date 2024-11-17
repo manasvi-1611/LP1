@@ -1,0 +1,136 @@
+/*1.make intermediate_code.asm 
+(AD,01) (C,100)
+(IS,05) (S,1) (S,2) ; LOC=100
+(IS,01) (S,3) ; LOC=101
+(IS,02) (L,0) ; LOC=102
+(IS,03) (S,4) ; LOC=103
+(IS,04) (L,1) ; LOC=104
+(AD,02)
+2.javac Pass2A intermediate_code.asm final.asm
+*/
+import java.io.*;
+import java.util.*;
+
+public class Pass2A {
+    static Map<String, Integer> symtab = new LinkedHashMap<>();  // Symbol Table
+    static List<String> littab = new ArrayList<>();              // Literal Table
+    static List<Integer> pooltab = new ArrayList<>();            // Pool Table
+    static int locationCounter = 100;                            // Starting location
+
+    public static void main(String[] args) {
+        if (args.length < 2) {
+            System.out.println("Usage: java Pass2A <intermediate_file> <output_file>");
+            return;
+        }
+
+        String intermediateFile = args[0];
+        String outputFile = args[1];
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(intermediateFile));
+             BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile))) {
+
+            // First, read and populate symbol, literal, and pool tables from the intermediate file
+            if (!readTables(intermediateFile)) {
+                System.out.println("Error: Failed to read tables from intermediate file.");
+                return;
+            }
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) continue;
+
+                String[] tokens = line.split("\\s+");
+                StringBuilder machineCode = new StringBuilder();
+
+                for (String token : tokens) {
+                    if (token.startsWith("(IS")) {
+                        // Instruction code (Opcode)
+                        machineCode.append(parseInstruction(token)).append(" ");
+                    } else if (token.startsWith("(C,")) {
+                        // Constant value
+                        String constant = token.substring(3, token.length() - 1);
+                        machineCode.append(constant).append(" ");
+                    } else if (token.startsWith("(S,")) {
+                        // Symbol (from symbol table)
+                        int symbolIndex = Integer.parseInt(token.substring(3, token.length() - 1));
+                        String symbol = getSymbol(symbolIndex);
+                        if (symbol != null) {
+                            machineCode.append(symtab.get(symbol)).append(" ");
+                        } else {
+                            System.out.println("Warning: Symbol with index " + symbolIndex + " not found.");
+                        }
+                    } else if (token.startsWith("(L,")) {
+                        // Literal (from literal table)
+                        int literalIndex = Integer.parseInt(token.substring(3, token.length() - 1));
+                        if (literalIndex >= 0 && literalIndex < littab.size()) {
+                            String literal = littab.get(literalIndex);
+                            machineCode.append(literal).append(" ");
+                        } else {
+                            System.out.println("Warning: Literal with index " + literalIndex + " not found.");
+                        }
+                    }
+                }
+
+                // Write the generated machine code line to the output file
+                writer.write(machineCode.toString().trim());
+                writer.newLine();
+            }
+
+            System.out.println("Machine code generated in file: " + outputFile);
+
+        } catch (IOException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    // Method to read and populate symbol, literal, and pool tables from the intermediate file
+    private static boolean readTables(String intermediateFile) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(intermediateFile))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) continue;
+
+                String[] tokens = line.split("\\s+");
+                for (String token : tokens) {
+                    if (token.startsWith("(S,")) {
+                        int symbolIndex = Integer.parseInt(token.substring(3, token.length() - 1));
+                        if (!symtab.containsKey("Symbol" + symbolIndex)) {
+                            symtab.put("Symbol" + symbolIndex, locationCounter++);
+                        }
+                    } else if (token.startsWith("(L,")) {
+                        int literalIndex = Integer.parseInt(token.substring(3, token.length() - 1));
+                        if (literalIndex >= littab.size()) {
+                            littab.add("Literal" + literalIndex);
+                        }
+                    } else if (token.startsWith("(P,")) {
+                        int poolIndex = Integer.parseInt(token.substring(3, token.length() - 1));
+                        if (!pooltab.contains(poolIndex)) {
+                            pooltab.add(poolIndex);
+                        }
+                    }
+                }
+            }
+            return true;
+
+        } catch (IOException e) {
+            System.out.println("Error reading intermediate file: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // Parse the instruction opcode
+    private static String parseInstruction(String token) {
+        return token.substring(4, token.length() - 1);  // Remove (IS,XX) part and get the opcode
+    }
+
+    // Helper to get symbol by index from the symtab
+    private static String getSymbol(int index) {
+        if (index >= 0 && index < symtab.size()) {
+            List<String> symbols = new ArrayList<>(symtab.keySet());
+            return symbols.get(index);
+        }
+        return null;
+    }
+}
