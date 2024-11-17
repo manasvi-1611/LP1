@@ -1,0 +1,46 @@
+import java.util.*;
+public class OptimalPrac {
+    public static void optimalFunc(int[] pages, int numframes) {
+        ArrayList<Integer> frames = new ArrayList<>();
+        int fault = 0, hits = 0;
+        for (int i = 0; i < pages.length; i++) {
+            int page = pages[i];
+            if (frames.contains(page)) {
+                hits++;
+            }else {
+                if (frames.size() < numframes) {
+                    frames.add(page);
+                } else {
+                    int maxFutureUse = -1, indexToReplace = -1;
+                    for (int j = 0; j < frames.size(); j++) {
+                        int nextUse = -1;
+                        // Find the next usage of the page in the future, if any
+                        for (int k = i + 1; k < pages.length; k++) {
+                            if (pages[k] == frames.get(j)) {
+                                nextUse = k;
+                                break;
+                            }
+                        }
+                        if (nextUse == -1) {
+                            indexToReplace = j; // If the page is not used again, replace it
+                            break;
+                        }
+                        if (nextUse > maxFutureUse) {
+                            maxFutureUse = nextUse;
+                            indexToReplace = j;
+                        }
+                    }
+                    frames.set(indexToReplace, page);
+                }
+                fault++;
+            }
+            System.out.println("Page " + page + ": Frames: " + frames);
+        }
+        System.out.println("Faults: " + fault);
+        System.out.println("Hits: " + hits);
+    }
+    public static void main(String[] args) {
+        int[] pages = {1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5};
+        optimalFunc(pages, 3);
+    }
+}
