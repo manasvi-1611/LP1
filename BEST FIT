@@ -1,0 +1,26 @@
+import java.util.*;
+public class bestfit {
+    public static void bestFit(int[] block, int[] process  ) {
+        int[] alloc = new int[process.length];
+        Arrays.fill(alloc, -1);
+        for (int i = 0; i < process.length; i++) {
+            int bestIdx = -1;
+            for (int j = 0; j < block.length; j++) {
+                if (block[j] >= process[i] && (bestIdx == -1 || block[j] < block[bestIdx])) {
+                    bestIdx = j;
+                }
+            }
+            if (bestIdx != -1) {
+                alloc[i] = bestIdx;
+                block[bestIdx] -= process[i];
+            }
+        }
+        System.out.println("Process No.\tProcess Size\tBlock no.");
+        for (int i = 0; i < process.length; i++) {
+            System.out.println((i + 1) + "\t\t" + process[i] + "\t\t" + (alloc[i] + 1));
+        }
+    }
+    public static void main(String[] args) {
+        bestFit(new int[]{100, 500, 200, 300, 600}, new int[]{212, 417, 112, 426});
+    }
+}
