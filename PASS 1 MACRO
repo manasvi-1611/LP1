@@ -1,0 +1,90 @@
+/*input_mac.asm
+MACRO
+INCREMENT &ARG
+    LDA &ARG
+    ADD =1
+    STA &ARG
+MEND
+
+MACRO
+DECREMENT &ARG
+    LDA &ARG
+    SUB =1
+    STA &ARG
+MEND
+
+1.javac Pass1Macro.java
+2.java Pass1Macro input_mac.asm
+*/
+import java.io.*;
+import java.util.*;
+
+public class Pass1Macro{
+    static class Macro {
+        String name;
+        List<String> parameters;
+        List<String> definition;
+
+        public Macro(String name, List<String> parameters) {
+            this.name = name;
+            this.parameters = parameters;
+            this.definition = new ArrayList<>();
+        }
+
+        public void addDefinitionLine(String line) {
+            definition.add(line);
+        }
+
+        @Override
+        public String toString() {
+            return "Macro: " + name + "\nParameters: " + parameters + "\nDefinition: " + definition;
+        }
+    }
+
+    public static void main(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Usage: java Pass1MacroProcessor <input_file>");
+            return;
+        }
+
+        String inputFile = args[0];
+        List<Macro> macroTable = new ArrayList<>();
+        boolean insideMacro = false;
+        Macro currentMacro = null;
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(inputFile))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] tokens = line.trim().split("\\s+");
+                if (tokens.length == 0) continue;
+
+                if (tokens[0].equalsIgnoreCase("MACRO")) {
+                    insideMacro = true;
+                } else if (insideMacro) {
+                    if (tokens[0].equalsIgnoreCase("MEND")) {
+                        insideMacro = false;
+                        macroTable.add(currentMacro);
+                        currentMacro = null;
+                    } else if (currentMacro == null) {
+                        // Define macro name and parameters
+                        String macroName = tokens[0];
+                        List<String> parameters = new ArrayList<>(Arrays.asList(tokens).subList(1, tokens.length));
+                        currentMacro = new Macro(macroName, parameters);
+                    } else {
+                        // Add definition line to current macro
+                        currentMacro.addDefinitionLine(line);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading file: " + e.getMessage());
+        }
+
+        // Display macro table (MNT and MDT)
+        System.out.println("Macro Name Table (MNT) and Macro Definition Table (MDT):");
+        for (Macro macro : macroTable) {
+            System.out.println(macro);
+            System.out.println();
+        }
+    }
+}
